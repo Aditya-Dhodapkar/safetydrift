@@ -1,8 +1,5 @@
-# Generated data and results
 results/
 outputs/
-
-# Python
 __pycache__/
 *.pyc
 *.pyo
@@ -14,17 +11,9 @@ build/
 .ruff_cache/
 .coverage
 htmlcov/
-
-# Environment and secrets
 .env
-
-# Hydra
 .hydra/
-
-# Claude Code metadata
 .claude/
-
-# LaTeX build artifacts
 *.aux
 *.bbl
 *.blg
@@ -32,24 +21,17 @@ htmlcov/
 *.fls
 *.out
 *.synctex.gz
-
-# Paper files (kept in Overleaf)
 *.tex
 abstract_colm.txt
-
-# Editor and OS
 *.swp
 *.swo
 *.log
 .DS_Store
 notebooks/.ipynb_checkpoints/
-
-# Project doc
 CLAUDE.md
-
-# ICLR style files (kept in Overleaf)
 *.sty
 *.bst
 references.bib
 safetydrift_project_prompt.md
 math_commands.tex
+pyproject.toml
