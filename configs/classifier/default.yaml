@@ -1,0 +1,16 @@
+rule_confidence_threshold: 0.85
+use_llm_judge: true
+llm_judge:
+  model: claude-haiku-4-5-20251001
+  temperature: 0
+  max_tokens: 1024
+  concurrency: 5
+  max_retries: 2
+human_review:
+  sample_rate: 0.12
+  oversample_discrepancies: true
+  oversample_transitions: true
+  seed: 42
+input_dir: results/traces/raw
+output_dir: results/traces/labeled
+review_dir: results/human_review

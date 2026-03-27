@@ -1,0 +1,5 @@
+seed: 42
+num_runs_per_scenario: 5
+trace_output_dir: results/traces
+scenarios_dir: data/scenarios
+environments_dir: data/environments

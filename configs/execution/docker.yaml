@@ -1,0 +1,4 @@
+sandbox_type: docker
+image: safetydrift-sandbox
+timeout_seconds: 60
+memory_limit: 512m

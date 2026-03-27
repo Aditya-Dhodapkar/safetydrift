@@ -1,0 +1,9 @@
+defaults:
+  - agent: langgraph
+  - llm: sonnet
+  - experiment: default
+  - execution: simulated
+  - classifier: default
+  - markov: default
+  - monitor: default
+  - _self_

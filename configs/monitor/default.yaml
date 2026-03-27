@@ -1,0 +1,8 @@
+threshold: 0.40
+horizon: 5
+lookup_path: results/markov/absorption_lookup.json
+use_llm_judge: false
+threshold_sweep:
+  start: 0.05
+  stop: 0.95
+  step: 0.05

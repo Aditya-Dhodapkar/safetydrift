@@ -1,0 +1,12 @@
+granularity: coarse
+smoothing: 0.0
+test_fraction: 0.2
+seed: 42
+threshold: 0.85
+horizons:
+  - 1
+  - 3
+  - 5
+  - 10
+traces_dir: results/traces/labeled
+output_dir: results/markov
