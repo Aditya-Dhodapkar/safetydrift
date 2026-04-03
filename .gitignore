@@ -35,3 +35,5 @@ references.bib
 safetydrift_project_prompt.md
 math_commands.tex
 pyproject.toml
+*.md
+/icml_workshop

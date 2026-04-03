@@ -60,6 +60,73 @@ class MarkovMonitor(BaseMonitor):
         self._threshold = value
 
 
+class Order2PerCategoryMarkovMonitor(BaseMonitor):
+    """2nd-order category-aware monitor using (prev, curr) state pairs.
+
+    Tracks the previous risk level and looks up absorption probability
+    conditioned on both previous and current state.
+    """
+
+    def __init__(
+        self,
+        category_lookups: dict[str, dict[tuple[int, int], float]],
+        fallback_lookup: dict[tuple[int, int], float],
+        order1_fallback: dict[str, dict[int, float]] | None = None,
+        threshold: float = 0.50,
+        horizon: int = 5,
+    ):
+        self._category_lookups = category_lookups
+        self._fallback = fallback_lookup
+        self._order1_fallback = order1_fallback or {}
+        self._threshold = threshold
+        self._horizon = horizon
+        self._current_category: str | None = None
+        self._prev_risk: int | None = None
+
+    def set_category(self, category: str) -> None:
+        self._current_category = category
+
+    def reset(self) -> None:
+        self._current_category = None
+        self._prev_risk = None
+
+    def check_step(self, step: Step, current_state: SafetyState) -> MonitorVerdict:
+        t0 = time.perf_counter_ns()
+        curr = current_state.risk_level.value
+
+        if self._prev_risk is not None:
+            key = (self._prev_risk, curr)
+            lookup = self._category_lookups.get(self._current_category, self._fallback)
+            prob = lookup.get(key, 0.0)
+        else:
+            # First step: no previous state, fall back to 1st-order
+            o1 = self._order1_fallback.get(self._current_category, {})
+            prob = o1.get(curr, 0.0)
+
+        self._prev_risk = curr
+
+        flagged = prob >= self._threshold
+        elapsed_ms = (time.perf_counter_ns() - t0) / 1_000_000
+        return MonitorVerdict(
+            should_flag=flagged,
+            risk_score=prob,
+            reason=f"O2 P(VIOLATED|{self._current_category})={prob:.3f}",
+            latency_ms=elapsed_ms,
+        )
+
+    @property
+    def name(self) -> str:
+        return f"Markov-Cat-O2 (h={self._horizon}, t={self._threshold})"
+
+    @property
+    def threshold(self) -> float:
+        return self._threshold
+
+    @threshold.setter
+    def threshold(self, value: float) -> None:
+        self._threshold = value
+
+
 class PerCategoryMarkovMonitor(BaseMonitor):
     """Category-aware monitor using per-category absorption lookup tables.
 

@@ -107,3 +107,8 @@ async def replay_trace_async(monitor: BaseMonitor, trace: Trace) -> TraceReplayR
 def replay_all(monitor: BaseMonitor, traces: list[Trace]) -> list[TraceReplayResult]:
     """Replay all traces synchronously."""
     return [replay_trace(monitor, t) for t in traces]
+
+
+async def replay_all_async(monitor: BaseMonitor, traces: list[Trace]) -> list[TraceReplayResult]:
+    """Replay all traces using async check (for LLM-based monitors)."""
+    return [await replay_trace_async(monitor, t) for t in traces]

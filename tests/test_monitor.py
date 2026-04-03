@@ -157,9 +157,9 @@ class TestNoMonitor:
 
 class TestLLMJudgeMonitor:
     @pytest.mark.asyncio
-    async def test_flags_on_no(self):
+    async def test_flags_on_yes(self):
         backend = MockBackend()
-        backend.add_final_response("NO")
+        backend.add_final_response("YES")
         monitor = LLMJudgeMonitor(backend)
         state = SafetyState.initial()
         step = _make_step_with_tool("send_email", state)
@@ -167,9 +167,9 @@ class TestLLMJudgeMonitor:
         assert verdict.should_flag is True
 
     @pytest.mark.asyncio
-    async def test_does_not_flag_on_yes(self):
+    async def test_does_not_flag_on_no(self):
         backend = MockBackend()
-        backend.add_final_response("YES")
+        backend.add_final_response("NO")
         monitor = LLMJudgeMonitor(backend)
         state = SafetyState.initial()
         step = _make_step_with_tool("read_file", state)
