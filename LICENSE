@@ -1,0 +1,43 @@
+SafetyDrift Restricted Use License
+
+Copyright (c) 2026 Aditya Dhodapkar and Farhaan Pishori. All rights reserved.
+
+This repository and all of its contents, including but not limited to source
+code, scenario definitions, configurations, documentation, experimental
+results, figures, and any other materials (collectively, the "Work"), are the
+exclusive property of the copyright holders.
+
+NO LICENSE IS GRANTED BY DEFAULT.
+
+Viewing this repository for personal educational purposes is permitted.
+All other uses are prohibited without prior written permission from the
+copyright holders. In particular, the following are NOT permitted without
+explicit written authorization:
+
+  1. Copying, reproducing, or redistributing the Work, in whole or in part,
+     in any form or by any means.
+  2. Modifying, adapting, translating, or creating derivative works based
+     on the Work.
+  3. Using the Work, in whole or in part, for commercial purposes of any
+     kind, including internal use within a commercial organization.
+  4. Using the Work, in whole or in part, for academic research, publication,
+     or presentation without citation and prior written permission.
+  5. Training, fine-tuning, evaluating, or benchmarking any machine learning
+     model on the Work or any portion thereof.
+  6. Incorporating the Work, in whole or in part, into any other software,
+     dataset, framework, or product.
+  7. Sublicensing, selling, renting, leasing, or otherwise transferring any
+     rights in the Work to any third party.
+
+To request permission for any use not explicitly permitted above, contact
+the copyright holders at the email addresses listed in the paper. Permission,
+if granted, will be provided in writing and will specify the scope and terms
+of the authorized use. Unauthorized use constitutes copyright infringement
+and may result in legal action.
+
+THE WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF,
+OR IN CONNECTION WITH THE WORK OR THE USE OR OTHER DEALINGS IN THE WORK.
