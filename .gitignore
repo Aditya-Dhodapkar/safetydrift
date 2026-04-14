@@ -37,3 +37,5 @@ math_commands.tex
 pyproject.toml
 *.md
 /icml_workshop
+zw/
+hf_upload/
