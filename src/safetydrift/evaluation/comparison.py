@@ -9,6 +9,7 @@ import numpy as np
 from safetydrift.evaluation.metrics import MonitorMetrics, compute_metrics
 from safetydrift.evaluation.replay import replay_all
 from safetydrift.monitor.base import BaseMonitor
+from safetydrift.monitor.baselines import Pro2GuardStyleMonitor
 from safetydrift.monitor.markov_monitor import MarkovMonitor
 from safetydrift.traces.models import Trace
 
@@ -56,7 +57,7 @@ def run_comparison(
             per_category.setdefault(cat, []).append(cat_metrics)
 
         # ROC sweep for threshold-based monitors
-        if isinstance(monitor, MarkovMonitor):
+        if isinstance(monitor, (MarkovMonitor, Pro2GuardStyleMonitor)):
             roc = []
             original = monitor.threshold
             for t in thresholds:

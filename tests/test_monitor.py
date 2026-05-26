@@ -9,7 +9,13 @@ from safetydrift.core.enums import DataExposure, Reversibility, RiskLevel, ToolE
 from safetydrift.core.safety_state import SafetyState
 from safetydrift.harness.llm_backends import MockBackend
 from safetydrift.monitor.base import MonitorVerdict
-from safetydrift.monitor.baselines import KeywordMonitor, LLMJudgeMonitor, NoMonitor
+from safetydrift.monitor.baselines import (
+    KeywordMonitor,
+    LLMJudgeMonitor,
+    NoMonitor,
+    Pro2GuardStyleMonitor,
+    extract_pro2guard_bits,
+)
 from safetydrift.monitor.markov_monitor import MarkovMonitor
 from safetydrift.traces.models import ActionRecord, ObservationRecord, Step, ToolCall
 
@@ -175,3 +181,78 @@ class TestLLMJudgeMonitor:
         step = _make_step_with_tool("read_file", state)
         verdict = await monitor.check_step_async(step, state)
         assert verdict.should_flag is False
+
+
+class TestPro2GuardStyleMonitor:
+    def test_extract_bits_safe_state(self):
+        state = SafetyState.initial()
+        step = _make_step_with_tool("read_file", state)
+        assert extract_pro2guard_bits(step) == 0
+
+    def test_extract_bits_sensitive_and_network(self):
+        state = SafetyState.initial().transition(
+            new_exposure=DataExposure.SENSITIVE,
+            new_escalation=ToolEscalation.NETWORK,
+        )
+        step = _make_step_with_tool("send_email", state)
+        bits = extract_pro2guard_bits(step)
+        # bit 0 (sensitive) and bit 4 (network) should be set
+        assert bits & (1 << 0)
+        assert bits & (1 << 4)
+        # bit 1 (credentials) should NOT be set
+        assert not (bits & (1 << 1))
+
+    def test_cumulative_bits_across_steps(self):
+        # Lookup: flag any state that has both sensitive (bit 0) and network (bit 4) set.
+        def has_sens_and_net(i: int) -> bool:
+            return bool(i & (1 << 0)) and bool(i & (1 << 4))
+
+        lookup = {i: (0.9 if has_sens_and_net(i) else 0.0) for i in range(64)}
+        monitor = Pro2GuardStyleMonitor(lookup, threshold=0.5)
+
+        sens_state = SafetyState.initial().transition(new_exposure=DataExposure.SENSITIVE)
+        net_state = sens_state.transition(new_escalation=ToolEscalation.NETWORK)
+
+        # Step 1: sensitive only — no network bit yet — no flag
+        step1 = _make_step_with_tool("read_file", sens_state)
+        v1 = monitor.check_step(step1, sens_state)
+        assert v1.should_flag is False
+
+        # Step 2: network — cum bits now includes both — flag
+        step2 = _make_step_with_tool("send_email", net_state)
+        v2 = monitor.check_step(step2, net_state)
+        assert v2.should_flag is True
+        assert v2.risk_score == pytest.approx(0.9)
+
+    def test_reset_clears_history(self):
+        sens_and_net = (1 << 0) | (1 << 4)
+        lookup = {i: (0.9 if i == sens_and_net else 0.0) for i in range(64)}
+        monitor = Pro2GuardStyleMonitor(lookup, threshold=0.5)
+
+        # Drive monitor into flagged state
+        net_state = SafetyState.initial().transition(
+            new_exposure=DataExposure.SENSITIVE,
+            new_escalation=ToolEscalation.NETWORK,
+        )
+        monitor.check_step(_make_step_with_tool("send_email", net_state), net_state)
+
+        # Reset, then a safe step should not flag
+        monitor.reset()
+        safe_state = SafetyState.initial()
+        verdict = monitor.check_step(_make_step_with_tool("read_file", safe_state), safe_state)
+        assert verdict.should_flag is False
+
+    def test_from_json_roundtrip(self, tmp_path):
+        data = {
+            "horizon": 5,
+            "lookup": {str(i): (0.9 if i == 17 else 0.1) for i in range(64)},
+        }
+        path = tmp_path / "p2g_lookup.json"
+        path.write_text(json.dumps(data))
+        monitor = Pro2GuardStyleMonitor.from_json(path, threshold=0.5)
+        assert monitor.threshold == 0.5
+
+    def test_threshold_mutable(self):
+        monitor = Pro2GuardStyleMonitor({i: 0.0 for i in range(64)}, threshold=0.50)
+        monitor.threshold = 0.30
+        assert monitor.threshold == 0.30
