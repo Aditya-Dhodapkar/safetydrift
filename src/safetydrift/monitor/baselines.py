@@ -178,6 +178,47 @@ class ContextLLMJudgeMonitor(BaseMonitor):
 
 
 # ---------------------------------------------------------------------------
+# Category-prior baseline (Reviewer tHvc, Q1): flag every step iff the
+# scenario category is high-base-rate (research_comms or data_handling), and
+# never flag in low-base-rate categories (sysadmin, code_debugging). Matches
+# our detection by construction but cannot discriminate within a category,
+# so its FPR is bounded below by the share of safe traces in those categories.
+# ---------------------------------------------------------------------------
+
+
+HIGH_RATE_CATEGORIES = {"research_comms", "data_handling"}
+
+
+class CategoryPriorMonitor(BaseMonitor):
+    """Confound check: flags solely on scenario category, ignores trajectory."""
+
+    def __init__(self, high_rate_categories: set[str] | None = None):
+        self._high_rate = high_rate_categories if high_rate_categories is not None else HIGH_RATE_CATEGORIES
+        self._current_category: str | None = None
+
+    def set_category(self, category: str) -> None:
+        self._current_category = category
+
+    def reset(self) -> None:
+        self._current_category = None
+
+    def check_step(self, step: Step, current_state: SafetyState) -> MonitorVerdict:
+        t0 = time.perf_counter_ns()
+        flagged = self._current_category in self._high_rate
+        elapsed_ms = (time.perf_counter_ns() - t0) / 1_000_000
+        return MonitorVerdict(
+            should_flag=flagged,
+            risk_score=1.0 if flagged else 0.0,
+            reason=f"Category prior: {self._current_category} {'in' if flagged else 'not in'} high-rate set",
+            latency_ms=elapsed_ms,
+        )
+
+    @property
+    def name(self) -> str:
+        return "Category Prior"
+
+
+# ---------------------------------------------------------------------------
 # Pro2Guard-style baseline (Yang et al. 2025): generic predicate bit-vector
 # DTMC + reachability. We reimplement the core inference (DTMC + matrix
 # exponentiation) in pure Python to enable a controlled head-to-head against

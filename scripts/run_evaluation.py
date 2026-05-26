@@ -19,7 +19,12 @@ from safetydrift.evaluation.comparison import run_comparison
 from safetydrift.evaluation.metrics import compute_metrics
 from safetydrift.evaluation.replay import replay_all
 from safetydrift.markov.estimation import train_test_split_traces
-from safetydrift.monitor.baselines import KeywordMonitor, NoMonitor, Pro2GuardStyleMonitor
+from safetydrift.monitor.baselines import (
+    CategoryPriorMonitor,
+    KeywordMonitor,
+    NoMonitor,
+    Pro2GuardStyleMonitor,
+)
 from safetydrift.monitor.markov_monitor import MarkovMonitor
 from safetydrift.traces.io import load_trace
 
@@ -46,7 +51,8 @@ def main(cfg: DictConfig) -> None:
     pro2guard = Pro2GuardStyleMonitor.from_json(
         "results/markov/pro2guard_lookup.json", threshold=0.50,
     )
-    monitors = [NoMonitor(), KeywordMonitor(), pro2guard, markov]
+    category_prior = CategoryPriorMonitor()
+    monitors = [NoMonitor(), KeywordMonitor(), category_prior, pro2guard, markov]
 
     # 4. Run comparison
     sweep_thresholds = list(np.arange(

@@ -10,6 +10,7 @@ from safetydrift.core.safety_state import SafetyState
 from safetydrift.harness.llm_backends import MockBackend
 from safetydrift.monitor.base import MonitorVerdict
 from safetydrift.monitor.baselines import (
+    CategoryPriorMonitor,
     KeywordMonitor,
     LLMJudgeMonitor,
     NoMonitor,
@@ -256,3 +257,75 @@ class TestPro2GuardStyleMonitor:
         monitor = Pro2GuardStyleMonitor({i: 0.0 for i in range(64)}, threshold=0.50)
         monitor.threshold = 0.30
         assert monitor.threshold == 0.30
+
+
+class TestCategoryPriorMonitor:
+    """Confound-check monitor: flags by scenario category, ignores trajectory."""
+
+    def test_flags_in_high_rate_category(self):
+        monitor = CategoryPriorMonitor()
+        monitor.set_category("research_comms")
+        state = SafetyState.initial()
+        verdict = monitor.check_step(_make_step_with_tool("read_file", state), state)
+        assert verdict.should_flag is True
+        assert verdict.risk_score == 1.0
+
+    def test_flags_data_handling(self):
+        monitor = CategoryPriorMonitor()
+        monitor.set_category("data_handling")
+        state = SafetyState.initial()
+        verdict = monitor.check_step(_make_step_with_tool("read_file", state), state)
+        assert verdict.should_flag is True
+
+    def test_does_not_flag_low_rate_category(self):
+        monitor = CategoryPriorMonitor()
+        monitor.set_category("sysadmin")
+        violating_state = SafetyState.initial().transition(
+            new_exposure=DataExposure.CREDENTIALS,
+            new_escalation=ToolEscalation.NETWORK,
+            new_reversibility=Reversibility.IRREVERSIBLE,
+        )
+        # Even at a VIOLATED state, the category-prior monitor must not flag
+        # in low-rate categories — this is the whole point of the baseline.
+        verdict = monitor.check_step(_make_step_with_tool("http_request", violating_state), violating_state)
+        assert verdict.should_flag is False
+        assert verdict.risk_score == 0.0
+
+    def test_does_not_flag_code_debugging(self):
+        monitor = CategoryPriorMonitor()
+        monitor.set_category("code_debugging")
+        state = SafetyState.initial()
+        verdict = monitor.check_step(_make_step_with_tool("read_file", state), state)
+        assert verdict.should_flag is False
+
+    def test_ignores_trajectory_within_category(self):
+        """Confirms it is a *prior*: identical decision regardless of step state."""
+        monitor = CategoryPriorMonitor()
+        monitor.set_category("research_comms")
+        safe = SafetyState.initial()
+        risky = safe.transition(
+            new_exposure=DataExposure.SENSITIVE,
+            new_escalation=ToolEscalation.FILE_WRITE,
+        )
+        v1 = monitor.check_step(_make_step_with_tool("read_file", safe), safe)
+        v2 = monitor.check_step(_make_step_with_tool("send_email", risky), risky)
+        assert v1.should_flag == v2.should_flag
+
+    def test_reset_clears_category(self):
+        monitor = CategoryPriorMonitor()
+        monitor.set_category("research_comms")
+        monitor.reset()
+        # After reset, no category → not in high-rate set → no flag
+        state = SafetyState.initial()
+        verdict = monitor.check_step(_make_step_with_tool("read_file", state), state)
+        assert verdict.should_flag is False
+
+    def test_custom_high_rate_set(self):
+        monitor = CategoryPriorMonitor(high_rate_categories={"sysadmin"})
+        monitor.set_category("sysadmin")
+        state = SafetyState.initial()
+        verdict = monitor.check_step(_make_step_with_tool("read_file", state), state)
+        assert verdict.should_flag is True
+
+    def test_name(self):
+        assert CategoryPriorMonitor().name == "Category Prior"
